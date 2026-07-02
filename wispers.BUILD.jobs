@@ -172,7 +172,7 @@ def build():
     for i, c in enumerate(crates):
         name = "crate_%d" % i
         inputs[name] = c["input"]
-        copies.append('cp -dr "$(jq -r .%s <<<"$JOBS_DEPS")/." /build/vendor/' % name)
+        copies.append('ln -s "$(jq -r .%s <<<"$JOBS_DEPS")"/* /build/vendor/' % name)
 
     script = ("""
 set -e
@@ -210,7 +210,10 @@ export CARGO_HOME=/build/cargo
 mkdir -p "$SRC/wispers-connect/third_party/libjuice"
 cp -dr "$juice/." "$SRC/wispers-connect/third_party/libjuice/"
 
-# 5. Vendor every crate (each input rooted at <name>-<version>/).
+# 5. Vendor dir for cargo's source replacement: a symlink farm into the
+#    content-addressed store mounts (each crate input is rooted at
+#    <name>-<version>/) — no copying; cargo reads vendored sources through
+#    symlinks and never writes to them.
 mkdir -p /build/vendor
 """ + "\n".join(copies) + """
 
