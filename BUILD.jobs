@@ -1,0 +1,39 @@
+# BUILD.jobs — build the Wispers Connect client (github.com/s-te-ch/wispers-client)
+# with JOBS: hermetic, offline, net=none, on amd64 or arm64.
+#
+# This top-level recipe only pins the upstream source and re-exports the result;
+# the actual build lives in wispers.BUILD.jobs, applied to the pinned upstream
+# tree as a sub-build (the buildJobs override). That way the cargo plugin reads
+# the REAL upstream Cargo.lock at pin time — this repo carries no copy of it, so
+# bumping WISPERS_REF is the only thing needed to move to a new upstream commit.
+
+WISPERS_REF = "5c8f10e80c2957bd16033188b4180c50f39a1190"
+
+def build():
+    wispers = bld(
+        source = imp(fetcher = "github", params = {
+            "owner": "s-te-ch",
+            "repo": "wispers-client",
+            "ref": WISPERS_REF,
+        }),
+        buildJobs = str(source.read("wispers.BUILD.jobs")),
+        platform = platform,
+    )
+
+    # The binaries' ELF interpreter + first RUNPATH entry point into the musl
+    # loader's content-addressed store path; re-declare it here so THIS build's
+    # runtime closure carries it too (the sub-build's closure doesn't propagate
+    # through a plain file copy).
+    musl = imp(fetcher = "hostmusl", params = {}, platform = platform)
+
+    script = """
+set -e
+cp -dr "$(jq -r .wispers <<<"$JOBS_DEPS")/." "$out/"
+"""
+
+    return struct(
+        inputs = {"wispers": wispers, "musl": musl},
+        env = {},
+        script = script,
+        runtime_deps = [musl],
+    )
