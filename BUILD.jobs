@@ -32,6 +32,7 @@ cp -dr "$(jq -r .wispers <<<"$JOBS_DEPS")/." "$out/"
 """
 
     return struct(
+        name = "wispers-client",
         inputs = {"wispers": wispers, "musl": musl},
         env = {},
         script = script,
