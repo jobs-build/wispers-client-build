@@ -203,6 +203,12 @@ cp -dr "$toolchain"/*/rust-std-x86_64-unknown-linux-musl/. /build/rust/
 chmod -R u+w /build/rust
 export PATH="/build/rust/bin:$PATH"
 export CARGO_HOME=/build/cargo
+# Persistent cargo target dir (declared as a build cache below). Holds the
+# compiled dependency crates AND the expensive C/C++ build-script outputs
+# (BoringSSL via boring-sys, libjuice via cmake), so a rebuild recompiles only
+# what changed. Fixed path, not $SRC/target — $SRC (/build/src) is a reserved
+# cache prefix. cargo's own fingerprinting keeps a warm cache correct.
+export CARGO_TARGET_DIR=/build/cargo-target
 
 # 4. The libjuice git submodule: github archive tarballs exclude submodules, so
 #    it arrives as its own pinned import; build.rs cmake-builds it from the
@@ -264,8 +270,8 @@ cargo build --release --frozen --workspace
 #    (resolved via the $ORIGIN/../lib RUNPATH; libgcc_s also lives in the musl
 #    runtime_dep's store path).
 mkdir -p "$out/bin" "$out/lib" "$out/include"
-cp target/release/wcadm target/release/wconnect "$out/bin/"
-cp target/release/libwispers_connect.so "$out/lib/"
+cp "$CARGO_TARGET_DIR"/release/wcadm "$CARGO_TARGET_DIR"/release/wconnect "$out/bin/"
+cp "$CARGO_TARGET_DIR"/release/libwispers_connect.so "$out/lib/"
 cp wispers-connect/include/wispers_connect.h "$out/include/"
 cp -L /usr/lib/libssl.so.3 /usr/lib/libcrypto.so.3 /usr/lib/libgcc_s.so.1 "$out/lib/"
 [ ! -e /usr/lib/libstdc++.so.6 ] || cp -L /usr/lib/libstdc++.so.6 "$out/lib/"
@@ -287,4 +293,8 @@ EOF
         env = {},
         script = script,
         runtime_deps = [musl],
+        # Persistent cargo target dir: reuse compiled crates + the expensive
+        # BoringSSL/libjuice build-script outputs across builds. Advisory,
+        # atime-pruned, success-only upload; cargo fingerprinting keeps it correct.
+        caches = {"/build/cargo-target": "wispers-cargo-target"},
     )
