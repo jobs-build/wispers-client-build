@@ -307,6 +307,11 @@ EOF
         env = {},
         script = script,
         runtime_deps = [musl],
+        # The parallel 326-crate cargo build (+ BoringSSL/bindgen build
+        # scripts) needs far more than the 1Gi build default — which the
+        # runner now ENFORCES as cgroup memory.max (cgroup-leaf-holder,
+        # 2026-07-10): rustc gets OOM-SIGKILLed without this.
+        resources = struct(cpu = "4000m", memory = "6Gi"),
         # Persistent cargo target dir: reuse compiled crates + the expensive
         # BoringSSL/libjuice build-script outputs across builds. Advisory,
         # atime-pruned, success-only upload; cargo fingerprinting keeps it correct.
