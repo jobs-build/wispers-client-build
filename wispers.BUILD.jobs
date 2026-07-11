@@ -136,8 +136,22 @@ APKS = [
 def key_of(name):
     return "apk_" + name.replace("-", "_").replace("+", "_").replace(".", "_")
 
+# Recipe-declared fetchers (2026-07-10 design): the cargo plugin and the
+# alpineapk fetcher are pinned HERE — legacy string names stopped resolving
+# when the mutable fetcher: ref namespace was retired for non-seed fetchers.
+CARGOPLUGIN = fetcher(
+    name   = "cargoplugin",
+    url    = "https://github.com/jobs-build/plugin-cargo/archive/a1bb9cfa2f0974464f0e9375b951471f842af633.tar.gz",
+    sha256 = "29bf1fdba5d8fe1d85b5067ece21b270b654597581d1e98d112341c5dc2a49c5",
+)
+ALPINEAPK = fetcher(
+    name   = "alpineapk",
+    url    = "https://github.com/jobs-build/fetcher-alpineapk/archive/0a6a773a1247b7cab16f4dbb86facc0173a823d8.tar.gz",
+    sha256 = "b457e2ce7b357b240e7c160a0e65a46630067c2580b6872876829d6f07c4d12c",
+)
+
 def plugins():
-    return {"cargo": imp(fetcher = "cargoplugin", params = {})}
+    return {"cargo": imp(fetcher = CARGOPLUGIN, params = {})}
 
 def build():
     # Every "x86_64" in the script below (target triple, ld-musl loader name,
@@ -160,7 +174,7 @@ def build():
     stage = []
     for (name, ver, shas) in APKS:
         k = key_of(name)
-        inputs[k] = imp(fetcher = "alpineapk", params = {
+        inputs[k] = imp(fetcher = ALPINEAPK, params = {
             "branch": "v3.22", "repo": "main", "arch": arch,
             "name": name, "version": ver, "sha256": shas[arch],
         })
