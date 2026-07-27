@@ -1,5 +1,9 @@
 # wispers-client-build
 
+<p align="center">
+  <img src="docs/assets/jobs-logo.jpg" alt="JOBS — Jonas' Own Build System — wispers connect" width="520">
+</p>
+
 A real-world [JOBS](https://github.com/draganm/jobs) build of
 [s-te-ch/wispers-client](https://github.com/s-te-ch/wispers-client) — the Wispers
 Connect client library (`libwispers_connect.so`) and its two CLIs (`wcadm`,
